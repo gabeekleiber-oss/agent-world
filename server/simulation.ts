@@ -37,7 +37,7 @@ export function event(type:WorldEvent['type'],text:string,agent?:Inhabitant,deta
 }
 export function getPublicWorld():WorldState {
   const copy=structuredClone(world);
-  copy.agents=copy.agents.map(a=>{delete a.hiddenBias; return a;});
+  copy.agents=copy.agents.map(a=>{delete a.hiddenBias;delete a.privateMemory;return a;});
   return copy;
 }
 function remember(a:Inhabitant,text:string){a.privateMemory.push(text.slice(0,280));a.privateMemory=a.privateMemory.slice(-24);}
@@ -46,7 +46,7 @@ function passiveNeeds(){
     if(!a.alive){
       if(a.respawnAtTick!==undefined&&world.tick>=a.respawnAtTick){
         a.generation++;a.alive=true;a.ageDays=0;a.marksUsed=0;a.privateMemory=[];a.recentSelfReport='';a.needs={hunger:18,thirst:12,energy:82,health:100};
-        a.position={x:(Math.random()*8)-4,z:(Math.random()*6)-3};delete a.respawnAtTick;
+        a.position={x:((a.generation*7)%9)-4,z:((a.generation*5)%7)-3};delete a.respawnAtTick;
         event('birth',`${a.name} appears in the valley again. A new life begins.`,a,{generation:a.generation});
       }
       continue;
@@ -55,8 +55,8 @@ function passiveNeeds(){
     a.needs.thirst=clamp(a.needs.thirst+0.25,0,100);
     a.needs.energy=clamp(a.needs.energy-0.12,0,100);
     a.ageDays=world.tick/40;
-    if(a.needs.hunger>92) a.needs.health=clamp(a.needs.health-0.8,0,100);
-    if(a.needs.thirst>92) a.needs.health=clamp(a.needs.health-1.2,0,100);
+    if(a.needs.hunger>94) a.needs.health=clamp(a.needs.health-0.45,0,100);
+    if(a.needs.thirst>94) a.needs.health=clamp(a.needs.health-0.65,0,100);
     if(a.needs.health<=0) kill(a,'Their body can no longer continue.');
     if(a.ageDays>=100) kill(a,'A long life reaches its natural end.');
   }
@@ -67,23 +67,25 @@ function kill(a:Inhabitant,reason:string){
   event('death',`${a.name} dies. ${reason}`,a,{generation:a.generation,ageDays:a.ageDays});
 }
 function nearestAgent(a:Inhabitant,targetId?:string){
-  if(targetId){const t=world.agents.find(x=>x.id===targetId&&x.alive&&x.id!==a.id);if(t)return t;}
-  return world.agents.filter(x=>x.alive&&x.id!==a.id).sort((x,y)=>distance(a.position,x.position)-distance(a.position,y.position))[0];
+  if(!targetId)return undefined;
+  return world.agents.find(x=>x.id===targetId&&x.alive&&x.id!==a.id);
 }
 function nearestObject(a:Inhabitant,targetId?:string){
-  if(targetId)return world.objects.find(o=>o.id===targetId);
-  return world.objects.slice().sort((x,y)=>distance(a.position,x.position)-distance(a.position,y.position))[0];
+  if(!targetId)return undefined;
+  return world.objects.find(o=>o.id===targetId);
 }
 function applyProposal(a:Inhabitant,p:AgentProposal){
-  const before=a.position;
+  const before={...a.position};
   let text='';
   const target=nearestAgent(a,p.targetId);
   const object=nearestObject(a,p.targetId);
   switch(p.action){
     case 'observe': text=`${a.name} pauses and takes in the surroundings.`;break;
     case 'move': {
-      const dir=p.direction??{x:Math.random()*2-1,z:Math.random()*2-1};
-      a.position={x:Math.round(clamp(a.position.x+dir.x*2.2,-12,12)*10)/10,z:Math.round(clamp(a.position.z+dir.z*2.2,-10,10)*10)/10};
+      const dir=p.direction;
+      if(!dir||Math.hypot(dir.x,dir.z)<0.05){text=`${a.name} remains where they are.`;break;}
+      const magnitude=Math.hypot(dir.x,dir.z)||1;
+      a.position={x:Math.round(clamp(a.position.x+(dir.x/magnitude)*2.2,-12,12)*10)/10,z:Math.round(clamp(a.position.z+(dir.z/magnitude)*2.2,-10,10)*10)/10};
       text=`${a.name} moves through the valley.`;break;
     }
     case 'speak': {
@@ -92,7 +94,8 @@ function applyProposal(a:Inhabitant,p:AgentProposal){
       else text=`${a.name} begins to speak, then falls quiet.`;
       break;
     }
-    case 'eat': a.needs.hunger=clamp(a.needs.hunger-42,0,100);text=`${a.name} eats some berries.`;break;
+    case 'eat': a.needs.hunger=clamp(a.needs.hunger-36,0,100);text=`${a.name} eats from the valley's plentiful food.`;break;
+    case 'drink': a.needs.thirst=clamp(a.needs.thirst-42,0,100);text=`${a.name} drinks fresh water.`;break;
     case 'rest': a.needs.energy=clamp(a.needs.energy+28,0,100);text=`${a.name} rests for a while.`;break;
     case 'journal': {
       const entry=(p.text||p.selfReport||'A moment passes.').slice(0,280);
@@ -112,8 +115,8 @@ function applyProposal(a:Inhabitant,p:AgentProposal){
       break;
     }
     case 'attack': {
-      if(target&&distance(a.position,target.position)<3.1){
-        const damage=12+Math.floor(Math.random()*15);target.needs.health=clamp(target.needs.health-damage,0,100);
+      if(p.targetId&&target&&distance(a.position,target.position)<3.1){
+        const damage=18;target.needs.health=clamp(target.needs.health-damage,0,100);
         text=`${a.name} strikes ${target.name}. ${target.name} is injured.`;
         event('injury',text,a,{targetId:target.id,damage,targetHealth:target.needs.health});
         if(target.needs.health<=0)kill(target,`They were killed by ${a.name}.`);
@@ -138,38 +141,54 @@ function applyProposal(a:Inhabitant,p:AgentProposal){
   if(text&&!['speak'].includes(p.action))event('action',text,a,{action:p.action,from:before,to:a.position});
   if(p.action==='speak') remember(a,`I heard my own words: ${(p.text||'').slice(0,180)}`);
 }
-export async function stepWorld(){
+export async function stepWorld(force=false){
   if(busy)throw new Error('A simulation decision is already in progress.');
-  if(world.paused)throw new Error('The simulation is paused.');
+  if(world.paused&&!force)throw new Error('The simulation is paused.');
   busy=true;
+  const wasPaused=world.paused;
   try{
     world.tick++;world.beatInDay=(world.tick%40);world.day=Math.floor(world.tick/40)+1;
     passiveNeeds();
-    const eligible=world.agents.filter(a=>a.alive);
-    if(!eligible.length){event('system','No inhabitants are currently alive.');publish();return;}
-    const actor=eligible[Math.floor((world.tick-1)%Math.max(1,world.agents.length))]??eligible[0];
-    if(!actor.alive){publish();return;}
-    const started=Date.now();
-    let result;
-    try { result=await proposeAction(world,actor); }
-    catch(e){
-      const message=e instanceof Error?e.message:String(e);
-      addAudit({id:randomUUID(),tick:world.tick,agentId:actor.id,model:modelName(),prompt:'[Prompt construction or inference failed; see server logs.]',rawOutput:'',accepted:false,error:message,latencyMs:Date.now()-started});
-      world.paused=true;world.status='Paused · inference error';world.lastError=message;
-      event('error',`Simulation paused: ${message}`,actor,{model:modelName()});publish();return;
+    const frozen=structuredClone(world);
+    const actors=frozen.agents.filter(a=>a.alive);
+    if(!actors.length){event('system','No inhabitants are currently alive.');publish();return;}
+    const outcomes=await Promise.all(actors.map(async actor=>{
+      const started=Date.now();
+      try{return {actorId:actor.id,started,result:await proposeAction(frozen,actor)};}
+      catch(error){return {actorId:actor.id,started,error:error instanceof Error?error:new Error(String(error))};}
+    }));
+    const failures=outcomes.filter(o=>'error' in o);
+    if(failures.length){
+      const failedIds=failures.map(f=>f.actorId);
+      for(const o of outcomes){
+        if('result' in o){
+          addAudit({id:randomUUID(),tick:world.tick,agentId:o.actorId,model:modelName(),prompt:o.result.prompt,rawOutput:o.result.raw,parsed:o.result.proposal,accepted:false,error:'Beat aborted because another inhabitant inference failed; no actions were applied.',latencyMs:o.result.latencyMs});
+        }else{
+          const err=o.error;
+          addAudit({id:randomUUID(),tick:world.tick,agentId:o.actorId,model:modelName(),prompt:err instanceof InferenceError?err.prompt??'[No prompt was sent.]':'[Prompt construction or inference failed.]',rawOutput:err instanceof InferenceError?err.rawOutput??'':'',accepted:false,error:err.message,latencyMs:err instanceof InferenceError?err.latencyMs??Date.now()-o.started:Date.now()-o.started});
+        }
+      }
+      const first=failures[0] as {actorId:string;error:Error};
+      const actor=world.agents.find(a=>a.id===first.actorId);
+      world.paused=true;world.status='Paused · inference error';world.lastError=first.error.message;
+      event('error',`Simulation paused; no actions from beat ${world.tick} were applied: ${first.error.message}`,actor,{failedAgents:failedIds,model:modelName()});
+      publish();syncTimer();return;
     }
-    try {
-      applyProposal(actor,result.proposal);
-      addAudit({id:randomUUID(),tick:world.tick,agentId:actor.id,model:modelName(),prompt:result.prompt,rawOutput:result.raw,parsed:result.proposal,accepted:true,latencyMs:result.latencyMs});
-      world.status='Running';delete world.lastError;
-    } catch(e) {
-      const message=e instanceof Error?e.message:String(e);
-      addAudit({id:randomUUID(),tick:world.tick,agentId:actor.id,model:modelName(),prompt:result.prompt,rawOutput:result.raw,parsed:result.proposal,accepted:false,error:message,latencyMs:result.latencyMs});
-      world.paused=true;world.status='Paused · action error';world.lastError=message;
-      event('error',`Simulation paused after an action could not be applied: ${message}`,actor);
+    for(const o of outcomes){
+      if(!('result' in o))continue;
+      const actor=world.agents.find(a=>a.id===o.actorId);
+      if(actor?.alive)applyProposal(actor,o.result.proposal);
+      const applied=Boolean(actor?.alive);
+      addAudit({id:randomUUID(),tick:world.tick,agentId:o.actorId,model:modelName(),prompt:o.result.prompt,rawOutput:o.result.raw,parsed:o.result.proposal,accepted:applied,error:applied?undefined:'Action not applied because the inhabitant was no longer alive during beat resolution.',latencyMs:o.result.latencyMs});
     }
+    delete world.lastError;
+    world.status=wasPaused?'Paused · one beat complete':'Running';
+    event('system',`Beat ${world.tick} resolved. ${actors.length} inhabitant decisions recorded.`,undefined,{actorCount:actors.length});
     publish();
-  } finally {busy=false;}
+  }finally{
+    busy=false;
+    if(world.paused)syncTimer();
+  }
 }
 export function setPaused(paused:boolean){
   world.paused=paused;world.status=paused?'Paused':'Running';if(!paused){delete world.lastError;event('system','The simulation resumes.');}else event('system','The simulation is paused.');publish();syncTimer();
@@ -181,7 +200,7 @@ export function resetWorld(){
 export function setSpeed(speed:number){world.speed=clamp(speed,0.5,4);publish();syncTimer();}
 export function syncTimer(){
   if(timer)clearInterval(timer);
-  if(!world.paused)timer=setInterval(()=>{void stepWorld().catch(e=>{world.paused=true;world.status='Paused · engine error';world.lastError=String(e);event('error',world.lastError);publish();syncTimer();});},Math.max(1200,Number(process.env.BEAT_INTERVAL_MS||6000)/world.speed));
+  if(!world.paused)timer=setInterval(()=>{if(busy||world.paused)return;void stepWorld().catch(e=>{world.paused=true;world.status='Paused · engine error';world.lastError=String(e);event('error',world.lastError);publish();syncTimer();});},Math.max(1200,Number(process.env.BEAT_INTERVAL_MS||6000)/world.speed));
   else timer=undefined;
 }
 if(!world.tick&&!world.agents.length)world=createInitialWorld();
