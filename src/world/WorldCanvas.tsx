@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import type { Inhabitant, WorldObject } from '../types';
 
 function Terrain(){
-  const hills=useMemo(()=>Array.from({length:34},(_,i)=>({x:Math.sin(i*17.31)*15,z:Math.cos(i*9.17)*12,s:0.8+((i*7)%10)/10,h:1.3+((i*13)%18)/10})),[]);
+  const hills=useMemo(()=>Array.from({length:34},(_,i)=>({x:Math.sin(i*17.31)*15,z:Math.cos(i*9.17)*12,s:0.8+((i*7)%10)/10,h:1.3+((i*13)%18)/10})).filter(h=>Math.hypot(h.x,h.z)>7),[]);
   const trees=useMemo(()=>Array.from({length:42},(_,i)=>({x:Math.sin(i*3.7)*10,z:Math.cos(i*2.13)*8,scale:.65+((i*5)%7)/10})).filter(p=>Math.hypot(p.x,p.z)>3.7),[]);
   return <group>
     <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.13,0]} receiveShadow><planeGeometry args={[42,36,1,1]}/><meshStandardMaterial color="#293d32" roughness={1}/></mesh>
