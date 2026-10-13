@@ -18,7 +18,7 @@ const objects:WorldObject[]=[
 const seedAgents=():Inhabitant[]=>[
   {id:'inhabitant-1',name:'Mara',generation:1,position:{x:-2,z:1},needs:{hunger:18,thirst:12,energy:82,health:100},ageDays:0,alive:true,marksUsed:0,privateMemory:[],recentSelfReport:'',lastAction:'Just arrived',lastActionTick:0,color:'#d9a46c',hiddenBias:'ordinary'},
   {id:'inhabitant-2',name:'Iven',generation:1,position:{x:2,z:1.5},needs:{hunger:20,thirst:14,energy:78,health:100},ageDays:0,alive:true,marksUsed:0,privateMemory:[],recentSelfReport:'',lastAction:'Just arrived',lastActionTick:0,color:'#8ab6a3',hiddenBias:'agitation'},
-  {id:'inhabitant-3',name:'Sela',generation:1,position:{x:-1,z:-2},needs:{hunger:15,thirst:15,energy:88,health:100},ageDays:0,alive:true,marksUsed:0,privateMemory:[],recentSelfReport:'',lastAction:'Just arrived',lastActionTick:0,color:'#9b9bd1',hiddenBias:'ordinary'},
+  {id:'inhabitant-3',name:'Sela',generation:1,position:{x:-1,z:-2},needs:{hunger:15,thirst:15,energy:88,health:100},ageDays:0,alive:true,marksUsed:0,privateMemory:[],recentSelfReport:'',lastAction:'Just arrived',lastActionTick:0,color:'#9b9bd1',hiddenBias:'resonance'},
   {id:'inhabitant-4',name:'Tovan',generation:1,position:{x:3,z:-2},needs:{hunger:22,thirst:10,energy:75,health:100},ageDays:0,alive:true,marksUsed:0,privateMemory:[],recentSelfReport:'',lastAction:'Just arrived',lastActionTick:0,color:'#c68f9b',hiddenBias:'ordinary'}
 ];
 export function createInitialWorld():WorldState {
