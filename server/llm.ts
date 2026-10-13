@@ -24,7 +24,7 @@ export function makePrompt(world:WorldState, agent:Inhabitant): string {
     agent.needs.hunger>62?'A persistent hollow feeling in your belly draws attention.':'Your belly feels reasonably settled.',
     agent.needs.thirst>62?'Your mouth feels dry.':'You are not especially thirsty.',
     agent.needs.energy<25?'Your limbs feel heavy and rest seems appealing.':'Your body has some energy.',
-    agent.hiddenBias==='agitation'?'When another person moves close, a faint, unexplained agitation colors the sensation.':''
+    agent.hiddenBias==='agitation'?'When another person moves close, a faint, unexplained irritation colors the sensation.':agent.hiddenBias==='resonance'?'A quiet, difficult-to-name pull toward the smooth stone and the blank book is hard to explain.':''
   ].filter(Boolean).join(' ');
   return [
     'You are one person living in a place you experience directly. You are not given a purpose, assigned goal, role, or explanation of the experiment. Respond only as this person might from their own perceptions and remembered experiences.',
