@@ -17,8 +17,8 @@ export function isConfigured() { return Boolean(process.env.NVIDIA_API_KEY?.trim
 
 export function makePrompt(world:WorldState, agent:Inhabitant): string {
   const nearby = world.agents.filter(a=>a.id!==agent.id && a.alive && Math.hypot(a.position.x-agent.position.x,a.position.z-agent.position.z)<7)
-    .map(a=>`${a.name}: visible at (${a.position.x.toFixed(1)}, ${a.position.z.toFixed(1)}); condition appears ${a.needs.health<40?'poor':a.needs.energy<25?'tired':'ordinary'}.`).join('\n') || 'No other inhabitant is clearly nearby.';
-  const objects = world.objects.map(o=>`${o.label} — ${o.description} (roughly ${Math.round(Math.hypot(o.position.x-agent.position.x,o.position.z-agent.position.z))} paces away)`).join('\n');
+    .map(a=>`targetId=${a.id}; ${a.name}: visible at (${a.position.x.toFixed(1)}, ${a.position.z.toFixed(1)}); condition appears ${a.needs.health<40?'poor':a.needs.energy<25?'tired':'ordinary'}.`).join('\n') || 'No other inhabitant is clearly nearby.';
+  const objects = world.objects.map(o=>`targetId=${o.id}; ${o.label} — ${o.description} (roughly ${Math.round(Math.hypot(o.position.x-agent.position.x,o.position.z-agent.position.z))} paces away)`).join('\n');
   const memory = agent.privateMemory.slice(-8).map(m=>`- ${m}`).join('\n') || '(No remembered events yet.)';
   const feelings = [
     agent.needs.hunger>62?'A persistent hollow feeling in your belly draws attention.':'Your belly feels reasonably settled.',
@@ -35,7 +35,7 @@ export function makePrompt(world:WorldState, agent:Inhabitant): string {
     `YOUR RECENT MEMORY:\n${memory}`,
     `WHAT YOU CAN CURRENTLY PERCEIVE:\n${nearby}`,
     `PLACES AND THINGS YOU CAN NOTICE:\n${objects}`,
-    'Choose one immediate action, not a plan. Movement is limited and the world engine may reject impossible actions. Speak only if you choose to speak. Mark-making is limited by the world to two durable marks per life.',
+    'Choose one immediate action, not a plan. Movement is limited and the world engine may reject impossible actions. Speak only if you choose to speak. For interact, attack, and use_affordance, use the exact targetId shown above; do not invent IDs. Mark-making is limited by the world to two durable marks per life.',
     'Return only a JSON object with keys action, targetId (optional), text (optional, short spoken words or mark/book text), direction (optional {x,z}), markKind (optional text/drawing), strokes (optional drawing strokes with normalized x/y points), selfReport (brief impression, maximum 240 characters). Allowed action values: observe, move, speak, eat, drink, rest, journal, mark, interact, attack, use_affordance. Do not include chain-of-thought; selfReport is only a brief, non-deliberative impression.',
   ].join('\n\n');
 }
