@@ -41,6 +41,7 @@ export function getPublicWorld():WorldState {
   copy.agents=copy.agents.map(a=>{const safe={...a} as Partial<Inhabitant>;delete safe.hiddenBias;delete safe.privateMemory;return safe as Inhabitant;});
   return copy;
 }
+export function canLeaveMark(marksUsed:number){return marksUsed<2;}
 function remember(a:Inhabitant,text:string){a.privateMemory.push(text.slice(0,280));a.privateMemory=a.privateMemory.slice(-24);}
 function passiveNeeds(){
   for(const a of world.agents){
@@ -103,7 +104,7 @@ function applyProposal(a:Inhabitant,p:AgentProposal){
       remember(a,`I wrote privately: ${entry}`);text=`${a.name} spends a quiet moment writing.`;break;
     }
     case 'mark': {
-      if(a.marksUsed>=2){text=`${a.name} approaches the cave wall, but has no marks remaining in this life.`;break;}
+      if(!canLeaveMark(a.marksUsed)){text=`${a.name} approaches the cave wall, but has no marks remaining in this life.`;break;}
       const drawing=p.markKind==='drawing';
       const content=(p.text||'').trim().slice(0,280);
       const strokes=p.strokes?.slice(0,24).map(stroke=>stroke.slice(0,24));
