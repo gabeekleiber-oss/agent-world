@@ -41,7 +41,7 @@ export function makePrompt(world:WorldState, agent:Inhabitant): string {
     `WHAT YOU CAN CURRENTLY PERCEIVE:\n${nearby}`,
     `PLACES AND THINGS YOU CAN NOTICE:\n${objects}`,
     `VISIBLE MARKS AND WRITING:\n${artifacts}`,
-    'Choose one immediate action, not a plan. Movement is limited and the world engine may reject impossible actions. Speak only if you choose to speak. For interact, attack, and use_affordance, use the exact targetId shown above; do not invent IDs. Mark-making is limited by the world to two durable marks per life.',
+    'Choose one immediate action, not a plan. When choosing move, include direction as x and z numbers between -1 and 1; without a direction you will stay still. Movement is limited and the world engine may reject impossible actions. Speak only if you choose to speak. For interact, attack, and use_affordance, use the exact targetId shown above; do not invent IDs. Mark-making is limited by the world to two durable marks per life.',
     'Return only a JSON object with keys action, targetId (optional), text (optional, short spoken words or mark/book text), direction (optional {x,z}), markKind (optional text/drawing), strokes (optional drawing strokes with normalized x/y points), selfReport (brief impression, maximum 240 characters). Allowed action values: observe, move, speak, eat, drink, rest, journal, mark, interact, attack, use_affordance. Do not include chain-of-thought; selfReport is only a brief, non-deliberative impression.',
   ].join('\n\n');
 }
