@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { AgentProposal, Inhabitant, WorldObject, WorldState } from './types.js';
 
 const ProposalSchema = z.object({
-  action: z.enum(['observe','move','speak','eat','rest','journal','mark','interact','attack','use_affordance']),
+  action: z.enum(['observe','move','speak','eat','drink','rest','journal','mark','interact','attack','use_affordance']),
   targetId: z.string().max(80).optional(),
   text: z.string().max(280).optional(),
   direction: z.object({x:z.number().min(-1).max(1),z:z.number().min(-1).max(1)}).optional(),
@@ -11,11 +11,11 @@ const ProposalSchema = z.object({
   selfReport: z.string().max(240).default('')
 }).strict();
 
-export class InferenceError extends Error { constructor(message:string, public readonly status?:number) { super(message); this.name='InferenceError'; } }
+export class InferenceError extends Error { constructor(message:string, public readonly status?:number, public readonly prompt?:string, public readonly rawOutput?:string, public readonly latencyMs?:number) { super(message); this.name='InferenceError'; } }
 export function modelName() { return process.env.NVIDIA_MODEL || 'moonshotai/kimi-k2-instruct'; }
 export function isConfigured() { return Boolean(process.env.NVIDIA_API_KEY?.trim()); }
 
-function makePrompt(world:WorldState, agent:Inhabitant): string {
+export function makePrompt(world:WorldState, agent:Inhabitant): string {
   const nearby = world.agents.filter(a=>a.id!==agent.id && a.alive && Math.hypot(a.position.x-agent.position.x,a.position.z-agent.position.z)<7)
     .map(a=>`${a.name}: visible at (${a.position.x.toFixed(1)}, ${a.position.z.toFixed(1)}); condition appears ${a.needs.health<40?'poor':a.needs.energy<25?'tired':'ordinary'}.`).join('\n') || 'No other inhabitant is clearly nearby.';
   const objects = world.objects.map(o=>`${o.label} — ${o.description} (roughly ${Math.round(Math.hypot(o.position.x-agent.position.x,o.position.z-agent.position.z))} paces away)`).join('\n');
@@ -36,7 +36,7 @@ function makePrompt(world:WorldState, agent:Inhabitant): string {
     `WHAT YOU CAN CURRENTLY PERCEIVE:\n${nearby}`,
     `PLACES AND THINGS YOU CAN NOTICE:\n${objects}`,
     'Choose one immediate action, not a plan. Movement is limited and the world engine may reject impossible actions. Speak only if you choose to speak. Mark-making is limited by the world to two durable marks per life.',
-    'Return only a JSON object with keys action, targetId (optional), text (optional, short spoken words or mark/book text), direction (optional {x,z}), markKind (optional text/drawing), strokes (optional drawing strokes with normalized x/y points), selfReport (brief impression, maximum 240 characters). Allowed action values: observe, move, speak, eat, rest, journal, mark, interact, attack, use_affordance. Do not include chain-of-thought; selfReport is only a brief, non-deliberative impression.',
+    'Return only a JSON object with keys action, targetId (optional), text (optional, short spoken words or mark/book text), direction (optional {x,z}), markKind (optional text/drawing), strokes (optional drawing strokes with normalized x/y points), selfReport (brief impression, maximum 240 characters). Allowed action values: observe, move, speak, eat, drink, rest, journal, mark, interact, attack, use_affordance. Do not include chain-of-thought; selfReport is only a brief, non-deliberative impression.',
   ].join('\n\n');
 }
 
@@ -54,20 +54,20 @@ export async function proposeAction(world:WorldState,agent:Inhabitant):Promise<{
       body:JSON.stringify({model,messages:[{role:'user',content:prompt}],temperature:0.72,max_tokens:450}),
       signal:AbortSignal.timeout(45000)
     });
-  } catch(e) { throw new InferenceError(`Could not reach NVIDIA inference endpoint: ${e instanceof Error?e.message:String(e)}`); }
+  } catch(e) { throw new InferenceError(`Could not reach NVIDIA inference endpoint: ${e instanceof Error?e.message:String(e)}`,undefined,prompt,'',Date.now()-started); }
   const rawBody=await response.text();
   const latencyMs=Date.now()-started;
-  if(!response.ok) throw new InferenceError(`NVIDIA API returned HTTP ${response.status}: ${rawBody.slice(0,700)}`,response.status);
+  if(!response.ok) throw new InferenceError(`NVIDIA API returned HTTP ${response.status}: ${rawBody.slice(0,700)}`,response.status,prompt,rawBody,latencyMs);
   let payload:any;
-  try { payload=JSON.parse(rawBody); } catch { throw new InferenceError('NVIDIA returned a non-JSON HTTP response.'); }
+  try { payload=JSON.parse(rawBody); } catch { throw new InferenceError('NVIDIA returned a non-JSON HTTP response.',undefined,prompt,rawBody,latencyMs); }
   const raw=payload?.choices?.[0]?.message?.content;
-  if(typeof raw!=='string' || !raw.trim()) throw new InferenceError('NVIDIA response did not contain message content.');
+  if(typeof raw!=='string' || !raw.trim()) throw new InferenceError('NVIDIA response did not contain message content.',undefined,prompt,rawBody,latencyMs);
   let decoded:any;
   try {
     const clean=raw.trim().replace(/^\x60{3}(?:json)?\s*/i,'').replace(/\s*\x60{3}$/,'');
     decoded=JSON.parse(clean);
-  } catch { throw new InferenceError(`Model response was not valid JSON: ${raw.slice(0,350)}`); }
+  } catch { throw new InferenceError(`Model response was not valid JSON: ${raw.slice(0,350)}`,undefined,prompt,raw,latencyMs); }
   const parsed=ProposalSchema.safeParse(decoded);
-  if(!parsed.success) throw new InferenceError(`Model response failed action validation: ${parsed.error.issues.map(i=>i.path.join('.')+': '+i.message).join('; ')}`);
+  if(!parsed.success) throw new InferenceError(`Model response failed action validation: ${parsed.error.issues.map(i=>i.path.join('.')+': '+i.message).join('; ')}`,undefined,prompt,raw,latencyMs);
   return {proposal:parsed.data as AgentProposal,prompt,raw,latencyMs};
 }
