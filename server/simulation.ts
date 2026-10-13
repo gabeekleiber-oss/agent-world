@@ -91,7 +91,7 @@ function applyProposal(a:Inhabitant,p:AgentProposal){
     }
     case 'speak': {
       const words=(p.text||'').trim().slice(0,280);
-      if(words){text=`${a.name} says: “${words}”`;remember(a,`I said: “${words}”`);event('speech',text,a,{text:words});}
+      if(words){text=`${a.name} says: “${words}”`;remember(a,`I said: “${words}”`);for(const listener of world.agents){if(listener.id!==a.id&&listener.alive&&distance(listener.position,a.position)<7)remember(listener,`${a.name} said: “${words}”`);}event('speech',text,a,{text:words,position:{...a.position}});}
       else text=`${a.name} begins to speak, then falls quiet.`;
       break;
     }
