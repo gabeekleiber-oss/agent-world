@@ -20,6 +20,11 @@ export function makePrompt(world:WorldState, agent:Inhabitant): string {
     .map(a=>`targetId=${a.id}; ${a.name}: visible at (${a.position.x.toFixed(1)}, ${a.position.z.toFixed(1)}); condition appears ${a.needs.health<40?'poor':a.needs.energy<25?'tired':'ordinary'}.`).join('\n') || 'No other inhabitant is clearly nearby.';
   const objects = world.objects.map(o=>`targetId=${o.id}; ${o.label} — ${o.description} (roughly ${Math.round(Math.hypot(o.position.x-agent.position.x,o.position.z-agent.position.z))} paces away)`).join('\n');
   const memory = agent.privateMemory.slice(-8).map(m=>`- ${m}`).join('\n') || '(No remembered events yet.)';
+  const cave=world.objects.find(o=>o.id==='cave');
+  const book=world.objects.find(o=>o.id==='book');
+  const visibleMarks=cave&&Math.hypot(cave.position.x-agent.position.x,cave.position.z-agent.position.z)<5.5?world.marks.slice(-8).map(m=>m.kind==='drawing'?'A drawing is visible on the cave wall.':`A mark on the cave wall reads: “${m.text}”`):[];
+  const visibleBook=book&&Math.hypot(book.position.x-agent.position.x,book.position.z-agent.position.z)<4?world.book.slice(-8).map(entry=>`The book contains: “${entry.text}”`):[];
+  const artifacts=[...visibleMarks,...visibleBook].join('\n')||'No marks or writing are visible from here.';
   const feelings = [
     agent.needs.hunger>62?'A persistent hollow feeling in your belly draws attention.':'Your belly feels reasonably settled.',
     agent.needs.thirst>62?'Your mouth feels dry.':'You are not especially thirsty.',
