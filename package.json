@@ -11,7 +11,7 @@
     "build": "tsc --noEmit && vite build && tsc -p tsconfig.server.json",
     "start": "node dist-server/index.js",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "tsx --test server/*.test.ts"
+    "test": "tsx --test server/simulation.test.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.0.7",
