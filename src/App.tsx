@@ -7,7 +7,7 @@ import {
 import WorldCanvas from './world/WorldCanvas';
 import type { Inhabitant, Snapshot, WorldEvent, WorldState } from './types';
 
-type Audit = {id:string;tick:number;agentId:string;model:string;prompt:string;rawOutput:string;parsed?:unknown;accepted:boolean;error?:string;latencyMs:number;createdAt:string};
+type Audit = {id:string;runId?:string;tick:number;agentId:string;model:string;prompt:string;rawOutput:string;parsed?:unknown;accepted:boolean;error?:string;latencyMs:number;createdAt:string};
 type Panel = 'events'|'marks'|'book'|'audit';
 const API='/api';
 async function api<T>(path:string,init?:RequestInit):Promise<T>{
@@ -55,12 +55,12 @@ export default function App(){
   const refresh=useCallback(async()=>{
     try{
       const data=await api<Snapshot>('/state');
-      setWorld(data.world);setEvents(data.events||[]);setConfigured(data.configured);setModel(data.model);setError(data.world.lastError||'');
+      setWorld(data.world);setEvents((data.events||[]).filter(e=>e.detail?.runId===data.world.runId));setConfigured(data.configured);setModel(data.model);setError(data.world.lastError||'');
     }catch(e){setError(e instanceof Error?e.message:String(e));}
     finally{setLoading(false);}
   },[]);
   useEffect(()=>{void refresh();const id=window.setInterval(()=>void refresh(),2200);return()=>window.clearInterval(id);},[refresh]);
-  useEffect(()=>{if(panel==='audit')void api<{calls:Audit[]}>('/audit').then(x=>setAudits(x.calls)).catch(e=>setError(String(e)));},[panel,world?.tick]);
+  useEffect(()=>{if(panel==='audit')void api<{calls:Audit[]}>('/audit').then(x=>setAudits(x.calls.filter(a=>a.runId===world?.runId))).catch(e=>setError(String(e)));},[panel,world?.tick]);
   const selected=world?.agents.find(a=>a.id===selectedId)||world?.agents[0];
   const filteredEvents=useMemo(()=>events.filter(e=>(e.text+' '+(e.agentName||'')+' '+e.type).toLowerCase().includes(search.toLowerCase())),[events,search]);
   const command=async(action:string,value?:number)=>{
