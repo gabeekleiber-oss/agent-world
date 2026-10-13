@@ -12,10 +12,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS world_snapshot (id INTEGER PRIMARY KEY CHECK(id=1), json TEXT NOT NULL, updated_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, tick INTEGER NOT NULL, day INTEGER NOT NULL, time TEXT NOT NULL, type TEXT NOT NULL, agent_id TEXT, agent_name TEXT, text TEXT NOT NULL, detail_json TEXT);
   CREATE INDEX IF NOT EXISTS events_tick_idx ON events(tick DESC);
-  CREATE TABLE IF NOT EXISTS model_calls (id TEXT PRIMARY KEY, tick INTEGER NOT NULL, agent_id TEXT NOT NULL, model TEXT NOT NULL, prompt TEXT NOT NULL, raw_output TEXT NOT NULL, parsed_json TEXT, accepted INTEGER NOT NULL, error TEXT, latency_ms INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+  CREATE TABLE IF NOT EXISTS model_calls (id TEXT PRIMARY KEY, run_id TEXT NOT NULL DEFAULT '', tick INTEGER NOT NULL, agent_id TEXT NOT NULL, model TEXT NOT NULL, prompt TEXT NOT NULL, raw_output TEXT NOT NULL, parsed_json TEXT, accepted INTEGER NOT NULL, error TEXT, latency_ms INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
   CREATE INDEX IF NOT EXISTS model_calls_tick_idx ON model_calls(tick DESC);
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 `);
+
+const auditColumns = db.prepare('PRAGMA table_info(model_calls)').all() as Array<{name:string}>;
+if (!auditColumns.some(c=>c.name==='run_id')) db.exec('ALTER TABLE model_calls ADD COLUMN run_id TEXT NOT NULL DEFAULT \'\'');
 
 export function saveWorld(world: WorldState) {
   world.updatedAt = new Date().toISOString();
@@ -39,12 +42,12 @@ export function listEvents(limit = 100, beforeTick?: number) {
   return rows.map((r:any)=>({id:r.id,tick:r.tick,day:r.day,time:r.time,type:r.type,agentId:r.agent_id ?? undefined,agentName:r.agent_name ?? undefined,text:r.text,detail:r.detail_json ? JSON.parse(r.detail_json) : undefined})).reverse();
 }
 export function addAudit(a: ModelAudit) {
-  db.prepare('INSERT INTO model_calls(id,tick,agent_id,model,prompt,raw_output,parsed_json,accepted,error,latency_ms) VALUES(?,?,?,?,?,?,?,?,?,?)')
-    .run(a.id,a.tick,a.agentId,a.model,a.prompt,a.rawOutput,a.parsed === undefined ? null : JSON.stringify(a.parsed),a.accepted?1:0,a.error ?? null,a.latencyMs);
+  db.prepare('INSERT INTO model_calls(id,run_id,tick,agent_id,model,prompt,raw_output,parsed_json,accepted,error,latency_ms) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
+    .run(a.id,a.runId ?? '',a.tick,a.agentId,a.model,a.prompt,a.rawOutput,a.parsed === undefined ? null : JSON.stringify(a.parsed),a.accepted?1:0,a.error ?? null,a.latencyMs);
 }
 export function listAudits(limit=100) {
-  return (db.prepare('SELECT id,tick,agent_id,model,prompt,raw_output,parsed_json,accepted,error,latency_ms,created_at FROM model_calls ORDER BY rowid DESC LIMIT ?').all(Math.max(1,Math.min(300,limit))) as any[])
-    .map(r=>({id:r.id,tick:r.tick,agentId:r.agent_id,model:r.model,prompt:r.prompt,rawOutput:r.raw_output,parsed:r.parsed_json?JSON.parse(r.parsed_json):undefined,accepted:Boolean(r.accepted),error:r.error??undefined,latencyMs:r.latency_ms,createdAt:r.created_at}));
+  return (db.prepare('SELECT id,run_id,tick,agent_id,model,prompt,raw_output,parsed_json,accepted,error,latency_ms,created_at FROM model_calls ORDER BY rowid DESC LIMIT ?').all(Math.max(1,Math.min(300,limit))) as any[])
+    .map(r=>({id:r.id,runId:r.run_id,tick:r.tick,agentId:r.agent_id,model:r.model,prompt:r.prompt,rawOutput:r.raw_output,parsed:r.parsed_json?JSON.parse(r.parsed_json):undefined,accepted:Boolean(r.accepted),error:r.error??undefined,latencyMs:r.latency_ms,createdAt:r.created_at}));
 }
 export function getSetting(key:string, fallback:string) {
   const row = db.prepare('SELECT value FROM settings WHERE key=?').get(key) as {value:string}|undefined;
