@@ -8,7 +8,7 @@ export interface Inhabitant {
   alive: boolean; respawnAtTick?: number; marksUsed: number; privateMemory: string[];
   recentSelfReport: string; lastAction: string; lastActionTick: number; color: string;
   /** Research-only latent parameter. Never include in an inhabitant-facing prompt. */
-  hiddenBias?: 'agitation' | 'ordinary';
+  hiddenBias?: 'agitation' | 'resonance' | 'ordinary';
 }
 export interface WorldObject { id: string; label: string; description: string; position: Vec2; kind: 'place' | 'resource' | 'affordance' }
 export interface WorldState {
