@@ -12,7 +12,7 @@ export interface Inhabitant {
 }
 export interface WorldObject { id: string; label: string; description: string; position: Vec2; kind: 'place' | 'resource' | 'affordance' }
 export interface WorldState {
-  version: 1; tick: number; day: number; beatInDay: number; paused: boolean; status: string;
+  version: 1; runId: string; tick: number; day: number; beatInDay: number; paused: boolean; status: string;
   speed: number; agents: Inhabitant[]; objects: WorldObject[]; marks: Mark[]; book: BookEntry[];
   lastError?: string; createdAt: string; updatedAt: string;
 }
@@ -24,4 +24,4 @@ export interface AgentProposal {
   action: ActionKind; targetId?: string; text?: string; direction?: Vec2; markKind?: 'text'|'drawing';
   strokes?: Array<{x:number;y:number}>[]; selfReport: string;
 }
-export interface ModelAudit { id: string; tick: number; agentId: string; model: string; prompt: string; rawOutput: string; parsed?: unknown; accepted: boolean; error?: string; latencyMs: number }
+export interface ModelAudit { id: string; runId?: string; tick: number; agentId: string; model: string; prompt: string; rawOutput: string; parsed?: unknown; accepted: boolean; error?: string; latencyMs: number }
