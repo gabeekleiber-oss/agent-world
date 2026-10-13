@@ -7,7 +7,7 @@ export interface WorldObject {id:string;label:string;description:string;position
 export interface WorldEvent {id:string;tick:number;day:number;time:string;type:string;agentId?:string;agentName?:string;text:string;detail?:Record<string,unknown>}
 export interface WorldState {
   version:number;runId:string;tick:number;day:number;beatInDay:number;paused:boolean;status:string;speed:number;agents:Inhabitant[];
-  objects:WorldObject[];marks:Array<{id:string;agentId:string;generation:number;tick:number;text:string;kind:'text'|'drawing'}>;
+  objects:WorldObject[];marks:Array<{id:string;agentId:string;generation:number;tick:number;text:string;kind:'text'|'drawing';strokes?:Array<{x:number;y:number}>[]}>;
   book:Array<{id:string;agentId:string;tick:number;text:string}>;lastError?:string;createdAt:string;updatedAt:string;
 }
 export interface Snapshot {world:WorldState;configured:boolean;model:string;events:WorldEvent[]}
