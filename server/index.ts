@@ -16,7 +16,7 @@ app.get('/api/health',(_req,res)=>res.json({ok:true,configured:isConfigured(),mo
 app.get('/api/state',(_req,res)=>res.json({world:getPublicWorld(),configured:isConfigured(),model:modelName(),events:listEvents(80)}));
 app.get('/api/events', (req,res)=>res.json({events:listEvents(Number(req.query.limit)||100,req.query.before?Number(req.query.before):undefined)}));
 app.get('/api/audit',(_req,res)=>res.json({calls:listAudits(100)}));
-app.post('/api/control', (req,res)=>{
+app.post('/api/control', async (req,res)=>{
   const action=req.body?.action;
   try{
     if(action==='pause')setPaused(true);
@@ -25,8 +25,7 @@ app.post('/api/control', (req,res)=>{
       setPaused(false);
     } else if(action==='step'){
       if(!isConfigured())return res.status(400).json({error:'NVIDIA_API_KEY is not configured.'});
-      if(getWorld().paused)return res.status(409).json({error:'Resume the simulation before advancing a beat.'});
-      void stepWorld().catch(e=>console.error('step failed',e));
+      await stepWorld(true);
     } else if(action==='reset')resetWorld();
     else if(action==='speed')setSpeed(Number(req.body?.value)||1);
     else return res.status(400).json({error:'Unknown control action.'});
