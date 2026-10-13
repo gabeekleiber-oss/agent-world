@@ -103,10 +103,15 @@ function applyProposal(a:Inhabitant,p:AgentProposal){
     }
     case 'mark': {
       if(a.marksUsed>=2){text=`${a.name} approaches the cave wall, but has no marks remaining in this life.`;break;}
+      const drawing=p.markKind==='drawing';
       const content=(p.text||'').trim().slice(0,280);
-      if(!content){text=`${a.name} studies the pale cave wall without leaving a mark.`;break;}
-      const mark={id:randomUUID(),agentId:a.id,generation:a.generation,tick:world.tick,text:content,kind:p.markKind==='drawing'?'drawing' as const:'text' as const,strokes:p.strokes?.slice(0,24).map(s=>s.slice(0,24))};
-      world.marks.push(mark);a.marksUsed++;event('mark',`${a.name} leaves a mark on the cave wall.`,a,{markId:mark.id,markText:content,marksRemaining:2-a.marksUsed});text=`${a.name} leaves a mark on the cave wall.`;break;
+      const strokes=p.strokes?.slice(0,24).map(stroke=>stroke.slice(0,24));
+      const cave=world.objects.find(o=>o.id==='cave');
+      if(!cave||distance(a.position,cave.position)>3.8){text=`${a.name} studies the cave wall from a distance, leaving no mark.`;break;}
+      if(drawing&&(!strokes||!strokes.some(stroke=>stroke.length>1))){text=`${a.name} traces a gesture in the air, but leaves no durable drawing.`;break;}
+      if(!drawing&&!content){text=`${a.name} studies the pale cave wall without leaving a mark.`;break;}
+      const mark={id:randomUUID(),agentId:a.id,generation:a.generation,tick:world.tick,text:content,kind:drawing?'drawing' as const:'text' as const,strokes:drawing?strokes:undefined};
+      world.marks.push(mark);a.marksUsed++;event('mark',`${a.name} leaves a mark on the cave wall.`,a,{markId:mark.id,markText:content,kind:mark.kind,marksRemaining:2-a.marksUsed});text=`${a.name} leaves a mark on the cave wall.`;break;
     }
     case 'interact': {
       if(target&&distance(a.position,target.position)<3.2){text=`${a.name} approaches ${target.name}.`;event('relationship',text,a,{targetId:target.id});}
