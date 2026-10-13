@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import {
   Activity, AlertTriangle, ArrowDownToLine, BookOpen, ChevronRight, CircleHelp, Clock3, Compass,
   Eye, FileSearch, Footprints, HeartPulse, Leaf, Moon, Pause, Play, RefreshCw, ScrollText,
@@ -33,7 +33,7 @@ function EventIcon({type}:{type:string}){
 }
 function AgentCard({agent,selected,onClick}:{agent:Inhabitant;selected:boolean;onClick:()=>void}){
   return <button className={`agent-card ${selected?'selected':''} ${agent.alive?'':'dead'}`} onClick={onClick}>
-    <span className="agent-avatar" style={{'--agent-color':agent.color} as React.CSSProperties}><span/></span>
+    <span className="agent-avatar" style={{'--agent-color':agent.color} as CSSProperties}><span/></span>
     <span className="agent-card-main"><strong>{agent.name}</strong><small>GEN {String(agent.generation).padStart(2,'0')} · {Math.floor(agent.ageDays)}D</small></span>
     <span className={`agent-health ${agent.needs.health<35?'low':''}`}>{Math.round(agent.needs.health)}<small>HP</small></span>
     <ChevronRight size={15} className="agent-chevron"/>
@@ -114,7 +114,7 @@ export default function App(){
         <WorldCanvas agents={world?.agents||[]} objects={world?.objects||[]} marks={world?.marks||[]} selectedId={selected?.id||''} onSelect={setSelectedId}/>
         <div className="stage-caption"><span><i className="caption-dot"/>{live?'OBSERVATION ACTIVE':'OBSERVATION PAUSED'}</span><span>SIMULATION TIME <b>{world?.day||1}D : {String(world?.beatInDay||0).padStart(2,'0')}B</b></span><span>40 BEATS / DAY</span></div>
         {selected&&<div className="selected-strip">
-          <div className="selected-person" style={{'--agent-color':selected.color} as React.CSSProperties}><span/></div>
+          <div className="selected-person" style={{'--agent-color':selected.color} as CSSProperties}><span/></div>
           <div className="selected-identity"><small>SELECTED INHABITANT</small><strong>{selected.name}</strong><span>{selected.alive?'Present in the world':'Life ended · awaiting return'} · Generation {selected.generation}</span></div>
           <div className="selected-last"><small>LAST OBSERVED ACTION</small><span>{selected.lastAction||'No action recorded'}</span></div>
           <div className="selected-age"><small>AGE</small><strong>{Math.floor(selected.ageDays)}<i> days</i></strong></div>
