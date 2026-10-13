@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createInitialWorld, getPublicWorld } from './simulation.js';
+import { canLeaveMark, createInitialWorld, getPublicWorld } from './simulation.js';
 import { makePrompt } from './llm.js';
 
 test('public world contains four inhabitants and hides latent temperament',()=>{
@@ -13,6 +13,10 @@ test('every inhabitant starts with a two-mark lifetime limit',()=>{
   const world=createInitialWorld();
   assert.ok(world.agents.every(a=>a.marksUsed===0));
   assert.equal(world.marks.length,0);
+  assert.equal(canLeaveMark(0),true);
+  assert.equal(canLeaveMark(1),true);
+  assert.equal(canLeaveMark(2),false);
+  assert.equal(canLeaveMark(3),false);
 });
 test('survival values are bounded',()=>{
   const world=getPublicWorld();
