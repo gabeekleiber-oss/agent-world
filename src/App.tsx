@@ -60,7 +60,7 @@ export default function App(){
     finally{setLoading(false);}
   },[]);
   useEffect(()=>{void refresh();const id=window.setInterval(()=>void refresh(),2200);return()=>window.clearInterval(id);},[refresh]);
-  useEffect(()=>{if(panel==='audit')void api<{calls:Audit[]}>('/audit').then(x=>setAudits(x.calls.filter(a=>a.runId===world?.runId))).catch(e=>setError(String(e)));},[panel,world?.tick]);
+  useEffect(()=>{if(panel==='audit')void api<{calls:Audit[]}>('/audit').then(x=>setAudits(x.calls.filter(a=>a.runId===world?.runId))).catch(e=>setError(String(e)));},[panel,world?.tick,world?.runId]);
   const selected=world?.agents.find(a=>a.id===selectedId)||world?.agents[0];
   const filteredEvents=useMemo(()=>events.filter(e=>(e.text+' '+(e.agentName||'')+' '+e.type).toLowerCase().includes(search.toLowerCase())),[events,search]);
   const command=async(action:string,value?:number)=>{
