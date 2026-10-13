@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { Html, OrbitControls, ContactShadows } from '@react-three/drei';
+import { Html, OrbitControls, ContactShadows, Line, Text } from '@react-three/drei';
 import { useMemo } from 'react';
 import type { Inhabitant, WorldObject } from '../types';
 
@@ -53,7 +53,10 @@ function ObjectMarker({object}:{object:WorldObject}){
     <mesh rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.34,.39,24]}/><meshBasicMaterial color="#bba27a" transparent opacity={.65}/></mesh>
   </group>;
 }
-export default function WorldCanvas({agents,objects,selectedId,onSelect}:{agents:Inhabitant[];objects:WorldObject[];selectedId:string;onSelect:(id:string)=>void}){
+function Markings({marks}:{marks:Array<{id:string;text:string;kind:'text'|'drawing';strokes?:Array<{x:number;y:number}>[]}>}) {
+  return <group>{marks.slice(-12).map((mark,i)=>mark.kind==='drawing'&&mark.strokes?.length ? mark.strokes.map((stroke,j)=>stroke.length>1?<Line key={mark.id+'-'+j} points={stroke.map(p=>[-8.35+p.x*2.65,.32+p.y*1.15,-1.79] as [number,number,number])} color="#d8c9a5" lineWidth={1.5}/>:null) : <Text key={mark.id} position={[-7.9+(i%3)*.8,.48+Math.floor(i/3)*.28,-1.79]} fontSize={.15} maxWidth={.78} color="#d8c9a5" anchorX="center" anchorY="middle">{mark.text.slice(0,32)}</Text>)}</group>;
+}
+export default function WorldCanvas({agents,objects,marks,selectedId,onSelect}:{agents:Inhabitant[];objects:WorldObject[];marks:Array<{id:string;text:string;kind:'text'|'drawing';strokes?:Array<{x:number;y:number}>[]}>;selectedId:string;onSelect:(id:string)=>void}){
   return <div className="world-canvas">
     <Canvas shadows dpr={[1,1.6]} camera={{position:[13,15,16],fov:43}} gl={{antialias:true,alpha:false}}>
       <color attach="background" args={['#1a2622']}/><fog attach="fog" args={['#1a2622',22,43]}/>
@@ -62,6 +65,7 @@ export default function WorldCanvas({agents,objects,selectedId,onSelect}:{agents
       <pointLight position={[0,5,0]} intensity={.4} color="#e1b783" distance={20}/>
       <Terrain/>
       {objects.map(o=><ObjectMarker key={o.id} object={o}/>)}
+      <Markings marks={marks}/>
       {agents.filter(a=>a.alive).map(a=><Person key={a.id} agent={a} selected={a.id===selectedId} onSelect={()=>onSelect(a.id)}/>)}
       <ContactShadows position={[0,-.105,0]} opacity={.28} scale={28} blur={2.8} far={9}/>
       <OrbitControls makeDefault minDistance={8} maxDistance={28} maxPolarAngle={Math.PI/2.05} target={[0,0,0]} enableDamping dampingFactor={.08}/>
