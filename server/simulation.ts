@@ -22,9 +22,10 @@ const seedAgents=():Inhabitant[]=>[
   {id:'inhabitant-4',name:'Tovan',generation:1,position:{x:3,z:-2},needs:{hunger:22,thirst:10,energy:75,health:100},ageDays:0,alive:true,marksUsed:0,privateMemory:[],recentSelfReport:'',lastAction:'Just arrived',lastActionTick:0,color:'#c68f9b',hiddenBias:'ordinary'}
 ];
 export function createInitialWorld():WorldState {
-  return {version:1,tick:0,day:1,beatInDay:0,paused:true,status:'Ready · paused',speed:1,agents:seedAgents(),objects,marks:[],book:[],createdAt:now(),updatedAt:now()};
+  return {version:1,runId:randomUUID(),tick:0,day:1,beatInDay:0,paused:true,status:'Ready · paused',speed:1,agents:seedAgents(),objects,marks:[],book:[],createdAt:now(),updatedAt:now()};
 }
 let world:WorldState=loadWorld()??createInitialWorld();
+if(!world.runId)world.runId=randomUUID();
 let busy=false;
 let timer:ReturnType<typeof setInterval>|undefined;
 const listeners=new Set<(w:WorldState)=>void>();
@@ -32,7 +33,7 @@ function publish(){ saveWorld(world); for(const fn of listeners) fn(world); }
 export function getWorld(){return world;}
 export function subscribe(fn:(w:WorldState)=>void){listeners.add(fn);return()=>listeners.delete(fn);}
 export function event(type:WorldEvent['type'],text:string,agent?:Inhabitant,detail?:Record<string,unknown>){
-  const e:WorldEvent={id:randomUUID(),tick:world.tick,day:world.day,time:now(),type,agentId:agent?.id,agentName:agent?.name,text,detail};
+  const e:WorldEvent={id:randomUUID(),tick:world.tick,day:world.day,time:now(),type,agentId:agent?.id,agentName:agent?.name,text,detail:{...(detail||{}),runId:world.runId}};
   addEvent(e); return e;
 }
 export function getPublicWorld():WorldState {
@@ -167,10 +168,10 @@ export async function stepWorld(force=false){
       const failedIds=failures.map(f=>f.actorId);
       for(const o of outcomes){
         if('result' in o){
-          addAudit({id:randomUUID(),tick:world.tick,agentId:o.actorId,model:modelName(),prompt:o.result.prompt,rawOutput:o.result.raw,parsed:o.result.proposal,accepted:false,error:'Beat aborted because another inhabitant inference failed; no actions were applied.',latencyMs:o.result.latencyMs});
+          addAudit({id:randomUUID(),runId:world.runId,tick:world.tick,agentId:o.actorId,model:modelName(),prompt:o.result.prompt,rawOutput:o.result.raw,parsed:o.result.proposal,accepted:false,error:'Beat aborted because another inhabitant inference failed; no actions were applied.',latencyMs:o.result.latencyMs});
         }else{
           const err=o.error;
-          addAudit({id:randomUUID(),tick:world.tick,agentId:o.actorId,model:modelName(),prompt:err instanceof InferenceError?err.prompt??'[No prompt was sent.]':'[Prompt construction or inference failed.]',rawOutput:err instanceof InferenceError?err.rawOutput??'':'',accepted:false,error:err.message,latencyMs:err instanceof InferenceError?err.latencyMs??Date.now()-o.started:Date.now()-o.started});
+          addAudit({id:randomUUID(),runId:world.runId,tick:world.tick,agentId:o.actorId,model:modelName(),prompt:err instanceof InferenceError?err.prompt??'[No prompt was sent.]':'[Prompt construction or inference failed.]',rawOutput:err instanceof InferenceError?err.rawOutput??'':'',accepted:false,error:err.message,latencyMs:err instanceof InferenceError?err.latencyMs??Date.now()-o.started:Date.now()-o.started});
         }
       }
       const first=failures[0] as {actorId:string;error:Error};
@@ -184,7 +185,7 @@ export async function stepWorld(force=false){
       const actor=world.agents.find(a=>a.id===o.actorId);
       if(actor?.alive)applyProposal(actor,o.result.proposal);
       const applied=Boolean(actor?.alive);
-      addAudit({id:randomUUID(),tick:world.tick,agentId:o.actorId,model:modelName(),prompt:o.result.prompt,rawOutput:o.result.raw,parsed:o.result.proposal,accepted:applied,error:applied?undefined:'Action not applied because the inhabitant was no longer alive during beat resolution.',latencyMs:o.result.latencyMs});
+      addAudit({id:randomUUID(),runId:world.runId,tick:world.tick,agentId:o.actorId,model:modelName(),prompt:o.result.prompt,rawOutput:o.result.raw,parsed:o.result.proposal,accepted:applied,error:applied?undefined:'Action not applied because the inhabitant was no longer alive during beat resolution.',latencyMs:o.result.latencyMs});
     }
     delete world.lastError;
     world.status=wasPaused?'Paused · one beat complete':'Running';
