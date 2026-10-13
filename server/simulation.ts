@@ -37,7 +37,7 @@ export function event(type:WorldEvent['type'],text:string,agent?:Inhabitant,deta
 }
 export function getPublicWorld():WorldState {
   const copy=structuredClone(world);
-  copy.agents=copy.agents.map(a=>{delete a.hiddenBias;delete a.privateMemory;return a;});
+  copy.agents=copy.agents.map(a=>{const safe={...a} as Partial<Inhabitant>;delete safe.hiddenBias;delete safe.privateMemory;return safe as Inhabitant;});
   return copy;
 }
 function remember(a:Inhabitant,text:string){a.privateMemory.push(text.slice(0,280));a.privateMemory=a.privateMemory.slice(-24);}
