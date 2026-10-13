@@ -1,4 +1,4 @@
-export type ActionKind = 'observe' | 'move' | 'speak' | 'eat' | 'rest' | 'journal' | 'mark' | 'interact' | 'attack' | 'use_affordance';
+export type ActionKind = 'observe' | 'move' | 'speak' | 'eat' | 'drink' | 'rest' | 'journal' | 'mark' | 'interact' | 'attack' | 'use_affordance';
 export interface Vec2 { x: number; z: number }
 export interface Needs { hunger: number; thirst: number; energy: number; health: number }
 export interface Mark { id: string; agentId: string; generation: number; tick: number; text: string; kind: 'text' | 'drawing'; strokes?: Array<{x:number;y:number}>[] }
