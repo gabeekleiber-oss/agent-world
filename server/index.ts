@@ -3,7 +3,6 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { addEvent, listAudits, listEvents, saveWorld } from './db.js';
 import { getPublicWorld, getWorld, resetWorld, setPaused, setSpeed, stepWorld, syncTimer } from './simulation.js';
 import { isConfigured, modelName } from './llm.js';
@@ -38,6 +37,11 @@ app.get('/api/export',(_req,res)=>{
   res.type('application/json').send(JSON.stringify(payload,null,2));
 });
 app.get('/api/settings',(_req,res)=>res.json({model:modelName(),configured:isConfigured(),beatIntervalMs:Number(process.env.BEAT_INTERVAL_MS||6000),databasePath:path.resolve(process.env.DATABASE_PATH||'./data/ai-world.sqlite')}));
+const frontendPath=path.resolve('dist');
+if(fs.existsSync(frontendPath)){
+  app.use(express.static(frontendPath));
+  app.get('*',(req,res,next)=>{if(req.path.startsWith('/api/'))return next();res.sendFile(path.join(frontendPath,'index.html'));});
+}
 const port=Number(process.env.PORT||4174);
 app.listen(port,'127.0.0.1',()=>{console.log(`AI World API listening at http://127.0.0.1:${port}`);});
 process.on('SIGINT',()=>{saveWorld(getWorld());process.exit(0);});
