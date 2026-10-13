@@ -55,7 +55,7 @@ export default function App(){
   const refresh=useCallback(async()=>{
     try{
       const data=await api<Snapshot>('/state');
-      setWorld(data.world);setEvents(data.events||[]);setConfigured(data.configured);setModel(data.model);setError('');
+      setWorld(data.world);setEvents(data.events||[]);setConfigured(data.configured);setModel(data.model);setError(data.world.lastError||'');
     }catch(e){setError(e instanceof Error?e.message:String(e));}
     finally{setLoading(false);}
   },[]);
