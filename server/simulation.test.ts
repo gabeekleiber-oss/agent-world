@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getPublicWorld, getWorld } from './simulation.js';
+import { createInitialWorld, getPublicWorld } from './simulation.js';
 import { makePrompt } from './llm.js';
 
 test('public world contains four inhabitants and hides latent temperament',()=>{
@@ -10,7 +10,7 @@ test('public world contains four inhabitants and hides latent temperament',()=>{
   assert.ok(world.agents.every(a=>!('privateMemory' in a)));
 });
 test('every inhabitant starts with a two-mark lifetime limit',()=>{
-  const world=getPublicWorld();
+  const world=createInitialWorld();
   assert.ok(world.agents.every(a=>a.marksUsed===0));
   assert.equal(world.marks.length,0);
 });
@@ -22,7 +22,7 @@ test('survival values are bounded',()=>{
 });
 
 test('inhabitant prompt does not disclose latent parameter names or values',()=>{
-  const world=getWorld();
+  const world=createInitialWorld();
   const agent=world.agents.find(a=>a.hiddenBias==='agitation')!;
   const prompt=makePrompt(world,agent);
   assert.doesNotMatch(prompt,/hiddenBias|latent parameter|secret temperament|hidden trait/i);
