@@ -88,7 +88,7 @@ export default function App(){
       <div className="instrument-cell"><span className="instrument-icon"><Sun size={14}/></span><span className="instrument-label">WORLD DAY</span><strong>{String(world?.day||1).padStart(3,'0')}</strong></div>
       <div className="instrument-cell"><span className="instrument-icon"><Clock3 size={14}/></span><span className="instrument-label">BEAT</span><strong>{String(world?.tick||0).padStart(5,'0')}</strong></div>
       <div className="instrument-cell"><span className="instrument-icon"><Users size={14}/></span><span className="instrument-label">INHABITANTS</span><strong>{world?.agents.filter(a=>a.alive).length||0}<em>/04</em></strong></div>
-      <div className="instrument-cell"><span className="instrument-icon"><ScrollText size={14}/></span><span className="instrument-label">CAVE MARKS</span><strong>{world?.marks.length||0}<em> / 8*</em></strong></div>
+      <div className="instrument-cell"><span className="instrument-icon"><ScrollText size={14}/></span><span className="instrument-label">CAVE MARKS</span><strong>{world?.marks.length||0}</strong></div>
       <div className="instrument-spacer"/>
       <div className="transport">
         <span className="transport-label">PACE</span>
