@@ -205,6 +205,6 @@ export function syncTimer(){
 }
 if(!world.tick&&!world.agents.length)world=createInitialWorld();
 if(!isConfigured()){world.paused=true;world.status='Ready · API key required';}
-if(process.env.START_PAUSED!=='0')world.paused=true;
+if(process.env.START_PAUSED!=='0'){world.paused=true;if(isConfigured())world.status='Ready · paused';}
 event('system','The valley is quiet. Four lives begin without instructions.',undefined,{model:modelName(),configured:isConfigured()});
 publish();
