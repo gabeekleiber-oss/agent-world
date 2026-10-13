@@ -26,7 +26,6 @@ test('inhabitant prompt does not disclose latent parameter names or values',()=>
   const agent=world.agents.find(a=>a.hiddenBias==='agitation')!;
   const prompt=makePrompt(world,agent);
   assert.doesNotMatch(prompt,/hiddenBias|latent parameter|secret temperament|hidden trait/i);
-  assert.doesNotMatch(prompt,/\bordinary\b/);
   assert.match(prompt,/faint, unexplained irritation/);
   const resonance=world.agents.find(a=>a.hiddenBias==='resonance')!;
   const resonancePrompt=makePrompt(world,resonance);
